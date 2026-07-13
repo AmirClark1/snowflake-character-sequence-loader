@@ -16,6 +16,20 @@ The protected Phase 3 implementation was validated across **23 structurally diff
 - Blank strings converted to SQL `NULL`
 - Different schemas, row counts, and file sizes handled without code changes
 
+## Intended use case
+
+This framework was designed for a **finite, operator-initiated one-time migration load**, not for continuous or scheduled ingestion.
+
+Automation was intentionally excluded because the source exports represented a one-time delivery. Adding tasks, streams, Snowpipe, or external orchestration would have increased cost and operational complexity without improving the business outcome.
+
+The design therefore prioritizes:
+
+- one reusable loader instead of one script per file,
+- safe and repeatable manual execution,
+- schema discovery at runtime,
+- clear validation after each load,
+- and a protected baseline that can be hardened without rewriting the proven core logic.
+
 ## Problem
 
 Legacy export systems often produce line-oriented text files where the first record contains column names, later records contain delimited values, each file can have a different schema, and manually creating one loader per file does not scale.
@@ -28,15 +42,17 @@ This project replaces file-specific ingestion SQL with one reusable Snowflake Sc
 flowchart LR
     A[Character-sequence file] --> B[Snowflake internal stage]
     B --> C[Named file format]
-    C --> D[LOAD_CHARACTER_SEQUENCE_FILE]
+    C --> D[Operator calls LOAD_CHARACTER_SEQUENCE_FILE]
     D --> E[Read first record as header]
     E --> F[Derive column count and identifiers]
     F --> G[Generate CREATE TABLE SQL]
     G --> H[Generate NULL-normalizing SELECT]
     H --> I[Load non-header records]
-    I --> J[Count loaded rows]
+    I --> J[Count and validate loaded rows]
     J --> K[Return load summary]
 ```
+
+This is intentionally a **manual batch execution pattern**. It is not a recurring pipeline architecture.
 
 ## Source format
 
@@ -100,17 +116,27 @@ docs/
 releases/
 ```
 
+## Engineering decisions
+
+The project intentionally separates **necessary reliability improvements** from **unnecessary automation**.
+
+Phase 4 may improve validation, recoverability, auditability, and error handling, but it will not add scheduling or continuous ingestion unless the source requirement changes.
+
+See [`docs/design-decisions.md`](docs/design-decisions.md) for the rationale.
+
 ## Engineering boundaries
 
-This repository protects the validated Phase 3 implementation. It is a proven metadata-driven raw-ingestion framework, but it is not yet a fully hardened production ingestion service.
+This repository protects the validated Phase 3 implementation. It is a proven metadata-driven raw-ingestion framework for operator-initiated one-time loads, but it is not yet a fully hardened migration utility.
 
-Known Phase 3 limitations include destructive `CREATE OR REPLACE TABLE` behavior, no transaction-safe publication step, no persistent audit log, no reject-row capture, no duplicate-header handling, no strict file-name or table-name allow-list, a practical 1,000-column generator limit, and no automated CI testing.
+Known Phase 3 limitations include destructive `CREATE OR REPLACE TABLE` behavior, no transaction-safe publication step, no persistent audit log, no reject-row capture, no duplicate-header handling, no strict file-name or table-name allow-list, a practical 1,000-column generator limit, and no automated test harness.
 
 These items are intentionally reserved for Phase 4 so the Phase 3 baseline remains reproducible.
 
 ## Phase 4 roadmap
 
-Planned hardening work includes strict input validation, duplicate and blank header checks, staged-table loading and atomic publication, structured audit and error logging, rejected-record capture, independent source-to-target reconciliation, configurable object names, automated tests, and safer deployment patterns.
+Planned hardening work includes strict input validation, duplicate and blank header checks, staged-table loading and atomic publication, structured audit and error logging, rejected-record capture, independent source-to-target reconciliation, configurable object names, repeatable test scripts, and safer deployment patterns.
+
+Phase 4 explicitly excludes recurring scheduling, event-driven ingestion, and continuous pipeline orchestration because they are outside the validated one-time-load requirement.
 
 ## Security and sanitization
 
