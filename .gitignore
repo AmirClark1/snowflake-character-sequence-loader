@@ -1,0 +1,32 @@
+# Operating systems
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local environment and secrets
+.env
+.env.*
+*.pem
+*.key
+secrets/
+credentials/
+
+# Snowflake connection files
+connections.toml
+config.toml
+
+# Generated output
+build/
+dist/
+tmp/
+*.log
+
+# Private or production artifacts
+data/private/
+sample_data/private/
+docs/screenshots/private/
