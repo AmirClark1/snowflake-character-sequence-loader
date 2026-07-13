@@ -1,0 +1,4 @@
+EmployeeID|~|EmployeeStatus|~|PublicNotes|~|Department
+10001|~|Active|~|Eligible for review|~|Operations
+10002|~||~||~|Engineering
+10003|~|Inactive|~||~|Finance
